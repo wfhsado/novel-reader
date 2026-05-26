@@ -337,7 +337,8 @@ class FloatingWindow(QWidget):
             end_line = len(self.all_lines)
 
         # 更新标题
-        self.title_label.setText(f"{self.chapters[chapter_index][1]} | Ctrl+H隐藏")
+        chapter_title = self.chapters[chapter_index][1]
+        self.title_label.setText(f"{chapter_title} | Ctrl+H隐藏")
 
         # 显示内容
         start = line_num
@@ -360,26 +361,80 @@ class FloatingWindow(QWidget):
         current_page = start // self.lines_per_page + 1
         self.page_label.setText(f"{current_page}/{total_pages}")
 
+        # 更新章节信息
+        self._update_chapter_info(start)
+
         # 触发位置变化回调
         if self.on_position_change:
             self.on_position_change()
 
+    def _update_chapter_info(self, current_line: int):
+        """更新当前章节信息"""
+        if not self.chapters:
+            return
+
+        # 找到当前行所在的章节
+        for i in range(len(self.chapters) - 1, -1, -1):
+            chap_pos = self.chapters[i][0]
+            chap_line = self.content[:chap_pos].count('\n')
+            if current_line >= chap_line:
+                if i != self.current_chapter:
+                    self.current_chapter = i
+                    chapter_title = self.chapters[i][1]
+                    self.title_label.setText(f"{chapter_title} | Ctrl+H隐藏")
+                break
+
     def next_page(self):
         """下一页"""
         next_pos = self.current_pos + self.lines_per_page
+
+        # 检查是否超出当前章节
+        if self.chapters and self.current_chapter < len(self.chapters):
+            # 计算当前章节的结束位置
+            if self.current_chapter + 1 < len(self.chapters):
+                next_chap_pos = self.chapters[self.current_chapter + 1][0]
+                chapter_end_line = self.content[:next_chap_pos].count('\n')
+            else:
+                chapter_end_line = len(self.all_lines)
+
+            # 如果下一页会超出当前章节
+            if next_pos >= chapter_end_line:
+                # 计算当前章节剩余行数
+                remaining_lines = chapter_end_line - self.current_pos
+                if remaining_lines > 0 and remaining_lines <= self.lines_per_page:
+                    # 显示剩余内容（已经接近章节结尾）
+                    self._display_from_pos(self.current_pos + remaining_lines)
+                elif remaining_lines > 0:
+                    # 还有很多内容，继续显示
+                    self._display_from_pos(next_pos)
+                else:
+                    # 已经在章节结尾，跳到下一章
+                    if self.current_chapter + 1 < len(self.chapters):
+                        self._display_chapter(self.current_chapter + 1)
+                return
+
+        # 正常翻页
         if next_pos < len(self.all_lines):
-            # 检查是否跨章节
-            if self.chapters:
-                current_line_pos = sum(len(l) + 1 for l in self.all_lines[:next_pos])
-                for i, (chap_pos, _) in enumerate(self.chapters):
-                    if chap_pos > current_line_pos and i > self.current_chapter:
-                        self._display_chapter(i)
-                        return
             self._display_from_pos(next_pos)
 
     def prev_page(self):
         """上一页"""
-        prev_pos = max(0, self.current_pos - self.lines_per_page)
+        prev_pos = self.current_pos - self.lines_per_page
+
+        # 检查是否超出当前章节
+        if self.chapters and self.current_chapter > 0:
+            # 计算当前章节的起始位置
+            chap_start_pos = self.chapters[self.current_chapter][0]
+            chapter_start_line = self.content[:chap_start_pos].count('\n')
+
+            # 如果上一页会超出当前章节
+            if prev_pos < chapter_start_line:
+                # 跳到上一章结尾
+                self._display_chapter(self.current_chapter - 1)
+                return
+
+        # 正常翻页
+        prev_pos = max(0, prev_pos)
         self._display_from_pos(prev_pos)
 
     def next_chapter(self):
