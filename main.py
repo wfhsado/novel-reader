@@ -5,6 +5,7 @@
 import sys
 import json
 import os
+import threading
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtCore import Qt, QSettings
@@ -145,9 +146,28 @@ class NovelReaderApp:
 
     def _setup_shortcuts(self):
         """设置全局快捷键"""
-        # 注意：PyQt5的全局快捷键需要QShortcut，但在某些系统上可能不工作
-        # 这里我们使用键盘事件来处理
-        pass
+        try:
+            import keyboard
+            # Ctrl+Tab: 恢复/显示窗口
+            keyboard.add_hotkey('ctrl+tab', self._toggle_window)
+            # Ctrl+H: 隐藏/显示窗口
+            keyboard.add_hotkey('ctrl+h', self._toggle_window)
+        except ImportError:
+            print("keyboard库未安装，全局快捷键不可用")
+        except Exception as e:
+            print(f"设置全局快捷键失败: {e}")
+
+    def _toggle_window(self):
+        """切换窗口显示/隐藏"""
+        if self.window.isVisible():
+            if self.window.isMinimized():
+                self.window.showNormal()
+                self.window.activateWindow()
+            else:
+                self.window.hide()
+        else:
+            self.window.show()
+            self.window.activateWindow()
 
     def load_novel(self, file_path: str, start_line: int = 0):
         """
