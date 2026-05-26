@@ -268,7 +268,7 @@ class FloatingWindow(QWidget):
     def _setup_shortcuts(self):
         """设置快捷键提示"""
         # 在标题显示快捷键提示
-        self.title_label.setText("小说摸鱼阅读器 | Ctrl+H隐藏 | Shift+拖动移动")
+        self.title_label.setText("小说摸鱼阅读器 | Ctrl+H隐藏 | Shift+拖动 | Ctrl+滚轮调大小")
 
     def load_content(self, content: str, chapters: list):
         """
@@ -480,9 +480,29 @@ class FloatingWindow(QWidget):
         self.setCursor(Qt.ArrowCursor)
 
     def wheelEvent(self, event):
-        """鼠标滚轮翻页"""
-        if event.angleDelta().y() > 0:
-            self.prev_page()
+        """鼠标滚轮：Ctrl+滚轮调整大小，滚轮翻页"""
+        if event.modifiers() == Qt.ControlModifier:
+            # Ctrl+滚轮：调整窗口大小
+            delta = event.angleDelta().y()
+            current_width = self.width()
+            current_height = self.height()
+
+            if delta > 0:
+                # 放大
+                new_width = min(current_width + 30, 1200)
+                new_height = min(current_height + 20, 900)
+            else:
+                # 缩小
+                new_width = max(current_width - 30, 250)
+                new_height = max(current_height - 20, 150)
+
+            self.resize(new_width, new_height)
+            # 根据窗口大小调整每页行数
+            self.lines_per_page = max(5, (new_height - 120) // 20)
         else:
-            self.next_page()
+            # 普通滚轮：翻页
+            if event.angleDelta().y() > 0:
+                self.prev_page()
+            else:
+                self.next_page()
         event.accept()
