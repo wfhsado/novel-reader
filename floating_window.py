@@ -185,6 +185,35 @@ class FloatingWindow(QWidget):
         btn_open.clicked.connect(self.open_file)
         tool_bar.addWidget(btn_open)
 
+        # 背景模式选择
+        bg_label = QLabel("背景:")
+        bg_label.setStyleSheet("color: #aaa; font-size: 10px;")
+        tool_bar.addWidget(bg_label)
+
+        self.bg_combo = QComboBox()
+        self.bg_combo.addItems(["透明", "米色", "深色"])
+        self.bg_combo.setFixedWidth(55)
+        self.bg_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #3a3a3a;
+                color: #e0e0e0;
+                border: 1px solid #555;
+                border-radius: 3px;
+                padding: 2px;
+                font-size: 10px;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #3a3a3a;
+                color: #e0e0e0;
+                selection-background-color: #4a9eff;
+            }
+        """)
+        self.bg_combo.currentTextChanged.connect(self.change_background)
+        tool_bar.addWidget(self.bg_combo)
+
         # 透明度滑块
         opacity_label = QLabel("透明:")
         opacity_label.setStyleSheet("color: #aaa; font-size: 10px;")
@@ -385,6 +414,42 @@ class FloatingWindow(QWidget):
         """改变字号"""
         self.font_size = size
         self.text_display.setFont(QFont("Microsoft YaHei", size))
+
+    def change_background(self, mode: str):
+        """改变背景模式"""
+        if mode == "透明":
+            self.text_display.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(30, 30, 30, 230);
+                    color: #d4d4d4;
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: "Microsoft YaHei", "SimSun", sans-serif;
+                }
+            """)
+        elif mode == "米色":
+            self.text_display.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 253, 240, 240);
+                    color: #333333;
+                    border: 1px solid #d4c5a9;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: "Microsoft YaHei", "SimSun", sans-serif;
+                }
+            """)
+        elif mode == "深色":
+            self.text_display.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(30, 30, 30, 250);
+                    color: #d4d4d4;
+                    border: 1px solid #555;
+                    border-radius: 5px;
+                    padding: 8px;
+                    font-family: "Microsoft YaHei", "SimSun", sans-serif;
+                }
+            """)
 
     def get_current_position(self) -> dict:
         """获取当前阅读位置信息"""
