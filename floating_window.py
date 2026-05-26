@@ -127,6 +127,7 @@ class FloatingWindow(QWidget):
             }
         """)
         self.text_display.setFont(QFont("Microsoft YaHei", self.font_size))
+        self.text_display.installEventFilter(self)  # 安装事件过滤器
         layout.addWidget(self.text_display)
 
         # 控制栏
@@ -388,54 +389,22 @@ class FloatingWindow(QWidget):
         """下一页"""
         next_pos = self.current_pos + self.lines_per_page
 
-        # 检查是否超出当前章节
-        if self.chapters and self.current_chapter < len(self.chapters):
-            # 计算当前章节的结束位置
-            if self.current_chapter + 1 < len(self.chapters):
-                next_chap_pos = self.chapters[self.current_chapter + 1][0]
-                chapter_end_line = self.content[:next_chap_pos].count('\n')
-            else:
-                chapter_end_line = len(self.all_lines)
-
-            # 如果下一页会超出当前章节
-            if next_pos >= chapter_end_line:
-                # 计算当前章节剩余行数
-                remaining_lines = chapter_end_line - self.current_pos
-                if remaining_lines > 0 and remaining_lines <= self.lines_per_page:
-                    # 显示剩余内容（已经接近章节结尾）
-                    self._display_from_pos(self.current_pos + remaining_lines)
-                elif remaining_lines > 0:
-                    # 还有很多内容，继续显示
-                    self._display_from_pos(next_pos)
-                else:
-                    # 已经在章节结尾，跳到下一章
-                    if self.current_chapter + 1 < len(self.chapters):
-                        self._display_chapter(self.current_chapter + 1)
-                return
-
         # 正常翻页
         if next_pos < len(self.all_lines):
             self._display_from_pos(next_pos)
+        elif self.chapters and self.current_chapter + 1 < len(self.chapters):
+            # 已经到文末，但还有下一章
+            self._display_chapter(self.current_chapter + 1)
 
     def prev_page(self):
         """上一页"""
         prev_pos = self.current_pos - self.lines_per_page
 
-        # 检查是否超出当前章节
-        if self.chapters and self.current_chapter > 0:
-            # 计算当前章节的起始位置
-            chap_start_pos = self.chapters[self.current_chapter][0]
-            chapter_start_line = self.content[:chap_start_pos].count('\n')
-
-            # 如果上一页会超出当前章节
-            if prev_pos < chapter_start_line:
-                # 跳到上一章结尾
-                self._display_chapter(self.current_chapter - 1)
-                return
-
-        # 正常翻页
-        prev_pos = max(0, prev_pos)
-        self._display_from_pos(prev_pos)
+        if prev_pos >= 0:
+            self._display_from_pos(prev_pos)
+        elif self.chapters and self.current_chapter > 0:
+            # 已经到文首，但还有上一章
+            self._display_chapter(self.current_chapter - 1)
 
     def next_chapter(self):
         """下一章"""
@@ -517,6 +486,25 @@ class FloatingWindow(QWidget):
         """跳转到指定行"""
         if 0 <= line_num < len(self.all_lines):
             self._display_from_pos(line_num)
+
+    def eventFilter(self, obj, event):
+        """事件过滤器：让QTextEdit也能响应Shift+拖动"""
+        if obj == self.text_display:
+            if event.type() == event.MouseButtonPress:
+                if event.button() == Qt.LeftButton and event.modifiers() == Qt.ShiftModifier:
+                    self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+                    self.setCursor(Qt.ClosedHandCursor)
+                    return True
+            elif event.type() == event.MouseMove:
+                if self.drag_position and event.buttons() == Qt.LeftButton:
+                    self.move(event.globalPos() - self.drag_position)
+                    return True
+            elif event.type() == event.MouseButtonRelease:
+                if event.button() == Qt.LeftButton:
+                    self.drag_position = None
+                    self.setCursor(Qt.ArrowCursor)
+                    return True
+        return super().eventFilter(obj, event)
 
     # 鼠标拖动支持（按住Shift键拖动）
     def mousePressEvent(self, event):
