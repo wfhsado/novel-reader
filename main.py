@@ -10,7 +10,7 @@ from PyQt5.QtGui import QIcon, QKeySequence
 from PyQt5.QtCore import Qt, QSettings
 
 from floating_window import FloatingWindow
-from chapter_parser import ChapterParser
+from file_parser import FileParser
 
 
 class NovelReaderApp:
@@ -34,8 +34,8 @@ class NovelReaderApp:
         # 确保配置目录存在
         os.makedirs(self.config_dir, exist_ok=True)
 
-        # 章节解析器
-        self.parser = ChapterParser()
+        # 文件解析器
+        self.parser = FileParser()
 
         # 创建悬浮窗
         self.window = FloatingWindow()
@@ -158,15 +158,8 @@ class NovelReaderApp:
             start_line: 起始行号
         """
         try:
-            # 检测编码
-            encoding = self.parser.detect_encoding(file_path)
-
-            # 读取文件
-            with open(file_path, 'r', encoding=encoding) as f:
-                content = f.read()
-
-            # 解析章节
-            chapters = self.parser.parse(content)
+            # 解析文件
+            content, chapters = self.parser.parse_file(file_path)
 
             # 更新窗口标题
             file_name = os.path.basename(file_path)

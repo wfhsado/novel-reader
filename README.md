@@ -17,8 +17,13 @@
 git clone https://github.com/wfhsado/novel-reader.git
 cd novel-reader
 
-# 安装依赖
+# 安装基础依赖
 pip install PyQt5
+
+# 安装可选依赖（支持更多格式）
+pip install ebooklib beautifulsoup4  # 支持EPUB
+pip install mobi                     # 支持MOBI
+pip install PyPDF2                   # 支持PDF
 
 # 运行程序
 python main.py
@@ -28,6 +33,8 @@ python main.py
 
 - **悬浮小窗**：始终置顶，可自由拖动
 - **智能分章**：自动识别"第X章"等章节格式
+- **章节目录**：点击"目录"按钮，快速跳转到任意章节
+- **多格式支持**：支持 TXT、EPUB、MOBI、PDF 格式
 - **透明度调节**：从20%到100%自由调整
 - **字号调节**：10-24号字体可选
 - **老板键**：Ctrl+H 快速隐藏窗口
@@ -48,11 +55,21 @@ python main.py
 
 ### 界面按钮
 
+- **目录**：显示/隐藏章节目录，点击可跳转
 - **◀章 / 章▶**：上一章/下一章
 - **◀ / ▶**：上一页/下一页
 - **打开**：选择小说文件
 - **透明**：调节窗口透明度
 - **字号**：调节字体大小
+
+## 支持格式
+
+| 格式 | 说明 | 依赖 |
+|------|------|------|
+| TXT | 纯文本格式 | 无 |
+| EPUB | 电子书格式 | ebooklib, beautifulsoup4 |
+| MOBI | Kindle格式 | mobi |
+| PDF | PDF文档 | PyPDF2 |
 
 ## 章节识别
 
@@ -67,7 +84,7 @@ python main.py
 ```
 novel-reader/
 ├── main.py              # 主程序
-├── chapter_parser.py    # 章节识别模块
+├── file_parser.py       # 文件解析模块（支持多格式）
 ├── floating_window.py   # 悬浮窗UI
 ├── build.bat            # 打包脚本
 ├── install.bat          # 安装依赖

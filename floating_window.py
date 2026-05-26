@@ -5,7 +5,8 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QTextEdit, QPushButton, QSlider, QFileDialog,
-    QComboBox, QSpinBox, QMenu, QAction, QApplication
+    QComboBox, QSpinBox, QMenu, QAction, QApplication,
+    QListWidget, QListWidgetItem, QSplitter
 )
 from PyQt5.QtCore import Qt, QPoint, QSize
 from PyQt5.QtGui import QFont, QColor, QCursor
@@ -85,6 +86,33 @@ class FloatingWindow(QWidget):
 
         layout.addLayout(title_bar)
 
+        # 章节目录面板（默认隐藏）
+        self.chapter_panel = QListWidget()
+        self.chapter_panel.setStyleSheet("""
+            QListWidget {
+                background-color: rgba(30, 30, 30, 230);
+                color: #d4d4d4;
+                border: 1px solid #444;
+                border-radius: 5px;
+                padding: 5px;
+                font-size: 12px;
+            }
+            QListWidget::item {
+                padding: 5px;
+                border-bottom: 1px solid #333;
+            }
+            QListWidget::item:selected {
+                background-color: #4a9eff;
+                color: white;
+            }
+            QListWidget::item:hover {
+                background-color: #3a3a3a;
+            }
+        """)
+        self.chapter_panel.itemClicked.connect(self._on_chapter_selected)
+        self.chapter_panel.hide()  # 默认隐藏
+        layout.addWidget(self.chapter_panel)
+
         # 阅读区域
         self.text_display = QTextEdit()
         self.text_display.setReadOnly(True)
@@ -103,6 +131,13 @@ class FloatingWindow(QWidget):
 
         # 控制栏
         control_bar = QHBoxLayout()
+
+        # 章节目录按钮
+        self.btn_chapter_list = QPushButton("目录")
+        self.btn_chapter_list.setFixedSize(35, 25)
+        self.btn_chapter_list.setStyleSheet(self._button_style("#4a9eff"))
+        self.btn_chapter_list.clicked.connect(self.toggle_chapter_panel)
+        control_bar.addWidget(self.btn_chapter_list)
 
         # 上一章
         btn_prev_chapter = QPushButton("◀章")
@@ -218,6 +253,9 @@ class FloatingWindow(QWidget):
         self.chapters = chapters
         self.all_lines = content.split('\n')
 
+        # 更新章节目录
+        self._update_chapter_list()
+
         if chapters:
             self.current_chapter = 0
             self.current_pos = chapters[0][0]
@@ -225,6 +263,31 @@ class FloatingWindow(QWidget):
         else:
             self.current_pos = 0
             self._display_from_pos(0)
+
+    def _update_chapter_list(self):
+        """更新章节目录列表"""
+        self.chapter_panel.clear()
+        for i, (pos, title) in enumerate(self.chapters):
+            self.chapter_panel.addItem(f"{i+1}. {title}")
+
+    def toggle_chapter_panel(self):
+        """切换章节目录面板显示/隐藏"""
+        if self.chapter_panel.isVisible():
+            self.chapter_panel.hide()
+            self.btn_chapter_list.setStyleSheet(self._button_style("#4a9eff"))
+        else:
+            self.chapter_panel.show()
+            self.btn_chapter_list.setStyleSheet(self._button_style("#ff9900"))
+            # 滚动到当前章节
+            if self.current_chapter < self.chapter_panel.count():
+                self.chapter_panel.setCurrentRow(self.current_chapter)
+
+    def _on_chapter_selected(self, item):
+        """点击章节目录项"""
+        index = self.chapter_panel.row(item)
+        self._display_chapter(index)
+        self.chapter_panel.hide()
+        self.btn_chapter_list.setStyleSheet(self._button_style("#4a9eff"))
 
     def _display_chapter(self, chapter_index: int):
         """显示指定章节"""
@@ -302,9 +365,12 @@ class FloatingWindow(QWidget):
 
     def open_file(self):
         """打开文件对话框"""
+        from file_parser import FileParser
+        parser = FileParser()
+
         file_path, _ = QFileDialog.getOpenFileName(
             self, "打开小说文件", "",
-            "文本文件 (*.txt);;所有文件 (*)"
+            parser.get_file_filter()
         )
         if file_path:
             # 通过信号通知主窗口
