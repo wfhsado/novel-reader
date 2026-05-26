@@ -389,12 +389,26 @@ class FloatingWindow(QWidget):
         """下一页"""
         next_pos = self.current_pos + self.lines_per_page
 
+        # 检查是否到了当前章节的末尾
+        if self.chapters and self.current_chapter < len(self.chapters):
+            # 获取当前章节的结束位置
+            if self.current_chapter + 1 < len(self.chapters):
+                next_chap_pos = self.chapters[self.current_chapter + 1][0]
+                chapter_end_line = self.content[:next_chap_pos].count('\n')
+            else:
+                chapter_end_line = len(self.all_lines)
+
+            # 如果当前显示的结束位置已经到达或超过章节末尾
+            current_display_end = self.current_pos + self.lines_per_page
+            if current_display_end >= chapter_end_line:
+                # 跳到下一章
+                if self.current_chapter + 1 < len(self.chapters):
+                    self._display_chapter(self.current_chapter + 1)
+                return
+
         # 正常翻页
         if next_pos < len(self.all_lines):
             self._display_from_pos(next_pos)
-        elif self.chapters and self.current_chapter + 1 < len(self.chapters):
-            # 已经到文末，但还有下一章
-            self._display_chapter(self.current_chapter + 1)
 
     def prev_page(self):
         """上一页"""
