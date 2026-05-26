@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# PyInstaller
+dist/
+build/
+*.spec
+*.exe
+
+# 配置文件（运行时生成）
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+Thumbs.db
+.DS_Store
+Desktop.ini
+
+# 虚拟环境
+venv/
+env/
+.venv/
